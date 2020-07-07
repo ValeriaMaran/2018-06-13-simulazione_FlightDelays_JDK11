@@ -1,8 +1,18 @@
 package it.polito.tdp.flightdelays;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.StringTokenizer;
 
+import com.sun.javafx.binding.StringFormatter;
+
+import it.polito.tdp.flightdelays.db.FlightDelaysDAO;
+import it.polito.tdp.flightdelays.model.Adiacenze;
+import it.polito.tdp.flightdelays.model.Airline;
+import it.polito.tdp.flightdelays.model.Airport;
 import it.polito.tdp.flightdelays.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -25,7 +35,7 @@ public class FXMLController {
     private TextArea txtResult;
 
     @FXML
-    private ComboBox<?> cmbBoxLineaAerea;
+    private ComboBox<String> cmbBoxLineaAerea;
 
     @FXML
     private Button caricaVoliBtn;
@@ -38,7 +48,31 @@ public class FXMLController {
 
     @FXML
     void doCaricaVoli(ActionEvent event) {
-
+    	txtResult.clear();
+    	String compagnia = cmbBoxLineaAerea.getValue();
+    	if(compagnia == null) {
+    		txtResult.appendText("prima di creare un grafo devi selezionare la compagnia aerea");
+    	}
+    	else {
+    		try{
+    			String[] Confronto = compagnia.split("-");
+	    		String id = Confronto[0]; 
+	    		String nome = Confronto[1]; 
+	    		model.CreaGrafo(id);
+    		}
+    		catch(Exception e) {
+    			txtResult.appendText("errore nella compagnia aerea");
+    			return;
+    		}
+    		
+    	}
+    	List<Adiacenze> adiacenze = model.getRottePeggiori();
+    	for(Adiacenze a : adiacenze) {
+    		txtResult.appendText(a.toStringRottePeggiori());
+    	}
+    	
+    	txtResult.appendText("il grafo è stato creato correttamente e contiene "+ model.getVertexNumber()+" vertici e " +model.getEdgesNumber()+" archi");
+    
     }
 
     @FXML
@@ -58,5 +92,6 @@ public class FXMLController {
 
 	public void setModel(Model model) {
 		this.model = model;
+		cmbBoxLineaAerea.getItems().addAll(model.getMappaLinee());
 	}
 }

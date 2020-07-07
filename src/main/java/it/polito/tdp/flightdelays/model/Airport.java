@@ -1,6 +1,6 @@
 package it.polito.tdp.flightdelays.model;
 
-public class Airport {
+public class Airport implements Comparable<Airport>{
 
 	private String id;
 	private String name;
@@ -79,12 +79,17 @@ public class Airport {
 
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("Airport [name=");
-		builder.append(name);
-		builder.append("]");
-		return builder.toString();
+		return String.format("Airport id=%s, name=%s, city=%s, state=%s, country=%s, latitude=%s, longitude=%s", id,
+				name, city, state, country, latitude, longitude);
 	}
+
+	@Override
+	public int compareTo(Airport o) {
+		
+		return this.id.compareTo(o.getId());
+	}
+	
+	
 	
 }
 

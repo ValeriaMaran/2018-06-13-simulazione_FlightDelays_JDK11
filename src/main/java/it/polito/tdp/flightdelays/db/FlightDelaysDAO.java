@@ -5,9 +5,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
+import it.polito.tdp.flightdelays.model.Adiacenze;
 import it.polito.tdp.flightdelays.model.Airline;
 import it.polito.tdp.flightdelays.model.Airport;
 import it.polito.tdp.flightdelays.model.Flight;
@@ -37,9 +40,9 @@ public class FlightDelaysDAO {
 		}
 	}
 
-	public List<Airport> loadAllAirports() {
+	public Map<String,Airport> loadAllAirports(Map<String,Airport> idMap) {
 		String sql = "SELECT id, airport, city, state, country, latitude, longitude FROM airports";
-		List<Airport> result = new ArrayList<Airport>();
+		//Map<String,Airport> idMap = new HashMap<String,Airport>();
 		
 		try {
 			Connection conn = DBConnect.getConnection();
@@ -47,13 +50,18 @@ public class FlightDelaysDAO {
 			ResultSet rs = st.executeQuery();
 
 			while (rs.next()) {
+				
 				Airport airport = new Airport(rs.getString("id"), rs.getString("airport"), rs.getString("city"),
-						rs.getString("state"), rs.getString("country"), rs.getDouble("latitude"), rs.getDouble("longitude"));
-				result.add(airport);
+					rs.getString("state"), rs.getString("country"), rs.getDouble("latitude"), rs.getDouble("longitude"));
+				
+				if(idMap.containsKey(rs.getString("id"))==false) {
+					idMap.put(rs.getString("id"), airport);
+				}
+		
 			}
 			
 			conn.close();
-			return result;
+			return idMap;
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -89,6 +97,55 @@ public class FlightDelaysDAO {
 			System.out.println("Errore connessione al database");
 			throw new RuntimeException("Error Connection Database");
 		}
+	}
+	public Map<String,Airline> getStringLineeAeree(){
+		String sql = "SELECT id,airline FROM airlines a ORDER BY a.AIRLINE ASC ";
+		Map<String,Airline> lineeAeree = new HashMap<String,Airline>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet rs = st.executeQuery();
+			while(rs.next()) {
+				Airline a = new Airline(rs.getString("id"),rs.getString("airline"));
+				lineeAeree.put(a.getId(),a);
+				
+			}
+			conn.close();
+		}
+		catch(SQLException e) {
+			e.printStackTrace();
+		}
+		return lineeAeree;
+	}
+	public List<Adiacenze> getAdiacenze(String id, Map<String, Airport> idMap){
+		//Map<String,Airport> aereoporti = new HashMap<String,Airport>();
+		List<Adiacenze> rotte = new LinkedList<Adiacenze>();
+		//loadAllAirports(aereoporti);
+		
+		String sql ="SELECT f.ORIGIN_AIRPORT_ID AS air1, f.DESTINATION_AIRPORT_ID AS air2,AVG(f.ARRIVAL_DELAY) AS tot "
+				+ "FROM flights f "
+				+ "WHERE f.AIRLINE =? "
+				+ "GROUP BY f.ORIGIN_AIRPORT_ID,f.DESTINATION_AIRPORT_ID "
+				+ "HAVING COUNT(f.FLIGHT_NUMBER)>1";
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, id);
+			ResultSet rs = st.executeQuery();
+				while(rs.next()) {
+					if(idMap.containsKey(rs.getString("air1")) && idMap.containsKey(rs.getString("air2"))) {
+						Airport a1 = idMap.get(rs.getString("air1"));
+						Airport a2 = idMap.get(rs.getString("air2"));
+						Adiacenze a = new Adiacenze(a1,a2,rs.getDouble("tot"));
+						rotte.add(a);
+					}
+					
+				}
+		}
+		catch(SQLException e) {
+			e.printStackTrace();
+		}
+		return rotte;
 	}
 }
 
